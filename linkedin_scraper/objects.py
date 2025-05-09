@@ -118,6 +118,8 @@ class Scraper:
         )
         
     def safe_callback(cb, *args, **kwargs):
+        if not callable(cb):
+            raise TypeError(f"Callback harus fungsi atau coroutine, bukan {type(cb)}")
         if inspect.iscoroutinefunction(cb):
             try:
                 loop = asyncio.get_running_loop()
@@ -128,6 +130,8 @@ class Scraper:
             cb(*args, **kwargs)
             
     def safe_callback_with_return(cb, *args, **kwargs):
+        if not callable(cb):
+            raise TypeError(f"Callback harus fungsi atau coroutine, bukan {type(cb)}")
         if inspect.iscoroutinefunction(cb):
             try:
                 loop = asyncio.get_running_loop()
