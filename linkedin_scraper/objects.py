@@ -126,6 +126,16 @@ class Scraper:
                 asyncio.run(cb(*args, **kwargs))
         else:
             cb(*args, **kwargs)
+            
+    def safe_callback_with_return(cb, *args, **kwargs):
+        if inspect.iscoroutinefunction(cb):
+            try:
+                loop = asyncio.get_running_loop()
+                asyncio.create_task(cb(*args, **kwargs))
+            except RuntimeError:
+                asyncio.run(cb(*args, **kwargs))
+        else:
+            cb(*args, **kwargs)
 
         
     def wait_for_element_to_be_clickable(self, xpath, by=By.XPATH):
