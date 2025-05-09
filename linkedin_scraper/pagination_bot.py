@@ -43,7 +43,7 @@ class PaginationBot(Scraper):
                 ))
         while self.pagination_count < total_pagination_pages and self.scrapped < self.limit:
             if self.callback_stop_reason != None:
-                stopped = self.callback_stop_reason()
+                stopped = self.safe_callback(self.callback_stop_reason)
                 if stopped:
                     break
             self._run_scrape()
@@ -52,7 +52,7 @@ class PaginationBot(Scraper):
     def _run_scrape(self):
         for i in range(1, 11):
             if self.callback_stop_reason != None:
-                stopped = self.callback_stop_reason()
+                stopped = self.safe_callback(self.callback_stop_reason)
                 if stopped:
                     self.driver.quit()
                     return
