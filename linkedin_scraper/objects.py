@@ -139,7 +139,7 @@ class Scraper:
             except RuntimeError:
                 return asyncio.run(cb(*args, **kwargs))
         else:
-            cb(*args, **kwargs)
+            return cb(*args, **kwargs)
 
         
     def wait_for_element_to_be_clickable(self, xpath, by=By.XPATH):

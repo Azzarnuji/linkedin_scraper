@@ -18,15 +18,18 @@ class LinkedinBot:
         self.limit = limit
         
     def set_callback_result(self, callback):
+        print("🚨 Callback type set_callback_result:", type(callback))  # Debugging
         self.callback = callback
         
     def set_url_pagination(self, url_pagination):
         self.url_pagination = url_pagination
         
     def set_callback_log(self, callback_log):
+        print("🚨 Callback type set_callback_log:", type(callback_log))  # Debugging
         self.callback_log = callback_log
         
     def set_callback_stop_reason(self, callback_stop_reason):
+        print("🚨 Callback type set_callback_stop_reason:", type(callback_stop_reason))  # Debugging
         self.callback_stop_reason = callback_stop_reason
         
     def run_scrape_person(self):
