@@ -34,7 +34,7 @@ class LinkedinBot:
         self.callback_stop_reason = callback_stop_reason
         
     def run_scrape_person(self):
-        PaginationBot(
+        runner = PaginationBot(
             self.driver,
             self.url_pagination,
             self.callback,
@@ -42,7 +42,8 @@ class LinkedinBot:
             self.current_page,
             self.limit,
             self.callback_stop_reason
-        ).run()
+        )
+        runner.run()
         
     def login_with_cookie(self, cookie):
         from linkedin_scraper import actions
