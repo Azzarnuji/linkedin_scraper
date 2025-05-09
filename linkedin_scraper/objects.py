@@ -131,9 +131,9 @@ class Scraper:
         if inspect.iscoroutinefunction(cb):
             try:
                 loop = asyncio.get_running_loop()
-                asyncio.create_task(cb(*args, **kwargs))
+                return asyncio.create_task(cb(*args, **kwargs))
             except RuntimeError:
-                asyncio.run(cb(*args, **kwargs))
+                return asyncio.run(cb(*args, **kwargs))
         else:
             cb(*args, **kwargs)
 
