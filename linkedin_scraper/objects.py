@@ -16,6 +16,34 @@ class Contact:
     name: str = None
     occupation: str = None
     url: str = None
+    
+@dataclass
+class CallbackLog:
+    currentUrl: str = None
+    targetUrl: str = None
+    current_pagination: int = None
+    total_pagination: int = None
+    message: str = None
+    
+@dataclass
+class ContactInfo:
+    account_address: str = None
+    account_email: str = None
+    account_birthday: str = None
+    connected_at: str = None
+    account_dist_value: str = None
+    account_phone: str = None
+
+@dataclass
+class PaginationBotOptions:
+    driver: webdriver.Chrome = None
+    url_pagination: str = None
+    callback: any = None
+    callbackLog: CallbackLog = None
+    currentPage: int = 1
+    callbackStopReason: any = None
+    limit: int = 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    
 
 
 @dataclass
@@ -87,6 +115,17 @@ class Scraper:
                 )
             )
         )
+        
+        
+    def wait_for_element_to_be_clickable(self, xpath, by=By.XPATH):
+        return WebDriverWait(self.driver, self.WAIT_FOR_ELEMENT_TIMEOUT).until(
+            EC.element_to_be_clickable(
+                (
+                    by,
+                    xpath
+                )
+            )
+        )
 
     def wait_for_all_elements_to_load(self, by=By.CLASS_NAME, name="pv-top-card", base=None):
         base = base or self.driver
@@ -140,9 +179,11 @@ class Scraper:
             pass
         return False
 
-    def __find_element_by_xpath__(self, tag_name):
+    def __find_element_by_xpath__(self, tag_name, returnElm = False):
         try:
-            self.driver.find_element(By.XPATH,tag_name)
+            element = self.driver.find_element(By.XPATH,tag_name)
+            if returnElm:
+                return element
             return True
         except:
             pass
@@ -155,7 +196,21 @@ class Scraper:
         except:
             pass
         return False
+    
+    def __scroll_into__(self, element):
+        self.driver.execute_script("arguments[0].scrollIntoView();", element)
+        
+    def clean_url_from_query(self,url):
+        from urllib.parse import urlparse, urlunparse
 
+        # Parse URL
+        parsed_url = urlparse(url)
+
+        # Hapus query string
+        clean_url = urlunparse(parsed_url._replace(query=""))
+
+        return clean_url
+    
     @classmethod
     def __find_first_available_element__(cls, *args):
         for elem in args:

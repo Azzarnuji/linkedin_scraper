@@ -1,4 +1,5 @@
 import getpass
+import time
 from . import constants as c
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.by import By
@@ -43,3 +44,4 @@ def _login_with_cookie(driver, cookie):
       "name": "li_at",
       "value": cookie
     })
+    time.sleep(3)

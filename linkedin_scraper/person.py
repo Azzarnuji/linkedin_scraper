@@ -1,10 +1,13 @@
+import random
 import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
-from .objects import Experience, Education, Scraper, Interest, Accomplishment, Contact
+import time
+from .objects import (Accomplishment, CallbackLog, Contact, ContactInfo, Education, Experience,
+    Interest, Scraper)
 import os
 from linkedin_scraper import selectors
 
@@ -31,6 +34,7 @@ class Person(Scraper):
         scrape=True,
         close_on_complete=True,
         time_to_wait_after_login=0,
+        callback_log: CallbackLog = None
     ):
         self.linkedin_url = linkedin_url
         self.name = name
@@ -41,6 +45,9 @@ class Person(Scraper):
         self.accomplishments = accomplishments or []
         self.also_viewed_urls = []
         self.contacts = contacts or []
+        self.contact_info = None
+        self.skills = []
+        self.callback_log = callback_log
 
         if driver is None:
             try:
@@ -83,6 +90,7 @@ class Person(Scraper):
 
     def add_contact(self, contact):
         self.contacts.append(contact)
+    
 
     def scrape(self, close_on_complete=True):
         if self.is_signed_in():
@@ -111,11 +119,24 @@ class Person(Scraper):
         self.driver.get(url)
         self.focus()
         main = self.wait_for_element_to_load(by=By.TAG_NAME, name="main")
+        self.wait(3)
         self.scroll_to_half()
         self.scroll_to_bottom()
         main_list = self.wait_for_element_to_load(name="pvs-list__container", base=main)
         for position in main_list.find_elements(By.CLASS_NAME, "pvs-list__paged-list-item"):
+            if self.callback_log != None:
+                self.callback_log(
+                    CallbackLog(
+                        currentUrl=self.driver.current_url,
+                        targetUrl=self.linkedin_url,
+                        current_pagination=None,
+                        total_pagination=None,
+                        message="Extracting Experience"
+                    )
+                )
             position = position.find_element(By.CSS_SELECTOR, "div[data-view-name='profile-component-entity']")
+            self.__scroll_into__(position)
+            time.sleep(3)
             company_logo_elem, position_details = position.find_elements(By.XPATH, "*")
 
             # company elem
@@ -190,6 +211,16 @@ class Person(Scraper):
                         institution_name=company,
                         linkedin_url=company_linkedin_url
                     )
+                    if self.callback_log != None:
+                        self.callback_log(
+                            CallbackLog(
+                                currentUrl=self.driver.current_url,
+                                targetUrl=self.linkedin_url,
+                                current_pagination=None,
+                                total_pagination=None,
+                                message=f"Extracted Experience: {position_title}, On Account: {self.name}"
+                            )
+                        )
                     self.add_experience(experience)
             else:
                 description = position_summary_text.text if position_summary_text else ""
@@ -204,7 +235,19 @@ class Person(Scraper):
                     institution_name=company,
                     linkedin_url=company_linkedin_url
                 )
+                if self.callback_log != None:
+                    self.callback_log(
+                        CallbackLog(
+                            currentUrl=self.driver.current_url,
+                            targetUrl=self.linkedin_url,
+                            current_pagination=None,
+                            total_pagination=None,
+                            message=f"Extracted Experience: {position_title}, On Account: {self.name}"
+                        )
+                    )
                 self.add_experience(experience)
+            
+            
 
     def get_educations(self):
         url = os.path.join(self.linkedin_url, "details/education")
@@ -262,6 +305,42 @@ class Person(Scraper):
         self.name = top_panel.find_element(By.TAG_NAME, "h1").text
         self.location = top_panel.find_element(By.XPATH, "//*[@class='text-body-small inline t-black--light break-words']").text
 
+    def get_contact_info(self):
+        url = os.path.join(self.linkedin_url, "overlay/contact-info/")
+        self.driver.get(url)
+        self.wait_for_element_to_load(by=By.CLASS_NAME, name="artdeco-modal-overlay")
+        
+        account_details = {
+            "account_address": self.__find_element_by_xpath__(
+                '//section[contains(@class,"pv-contact-info") and h3[text()[contains(.,"Address") or contains(.,"Alamat")]]]//div//a[contains(@class,"link-without-visited-state") and contains(@rel,"noopener noreferrer") and contains(@href,"maps")]'
+            ,True
+            ).text,
+            "account_email": self.__find_element_by_xpath__(
+                '//section[contains(@class,"pv-contact-info") and h3[text()[contains(.,"Email") or contains(.,"Email")]]]//div//a[contains(@class,"link-without-visited-state") and contains(@rel,"noopener noreferrer") and contains(@href,"mail")]'
+            ,True
+            ).get_attribute('href').split(":")[1],
+            "account_birthday": self.__find_element_by_xpath__(
+                '//section[contains(@class,"pv-contact-info") and h3[text()[contains(.,"Birthday") or contains(.,"Ulang Tahun")]]]//span[contains(@class,"t-14")]'
+            ,True
+            ).text,
+            "connected_at": self.__find_element_by_xpath__(
+                '//section[contains(@class,"pv-contact-info") and h3[text()[contains(.,"Connected") or contains(.,"Terhubung")]]]//span[contains(@class,"t-14")]'
+            ,True
+            ).text,
+            "account_dist_value": self.__find_element_by_xpath__(
+                '//span[contains(@class,"dist-value")]'
+            ,True
+            ).text,
+            "account_phone": self.__find_element_by_xpath__(
+                '//section[contains(@class,"pv-contact-info") and h3[text()[contains(.,"Phone") or contains(.,"Telepon")]]]//span[contains(@class,"t-14")]'
+            ,True
+            ).text,
+        }
+        
+        self.contact_info = ContactInfo(**account_details)
+         
+        
+
     def get_about(self):
         try:
             about = self.driver.find_element(By.ID,"about").find_element(By.XPATH,"..").find_element(By.CLASS_NAME,"display-flex").text
@@ -286,96 +365,70 @@ class Person(Scraper):
 
         # get name and location
         self.get_name_and_location()
-
+        self.wait(5)
+        
         self.open_to_work = self.is_open_to_work()
-
+        self.wait(5)
+        
+        
         # get about
         self.get_about()
+        self.wait(5)
+        
         driver.execute_script(
             "window.scrollTo(0, Math.ceil(document.body.scrollHeight/2));"
         )
         driver.execute_script(
             "window.scrollTo(0, Math.ceil(document.body.scrollHeight/1.5));"
         )
-
+        
+        #get contact info
+        self.get_contact_info()
+        self.wait(5)
+        
         # get experience
         self.get_experiences()
-
+        self.wait(5)
+        
         # get education
         self.get_educations()
+        self.wait(5)
+        
+        #get skills
+        self.get_skills()
+        self.wait(5)
 
         driver.get(self.linkedin_url)
 
-        # get interest
-        try:
-
-            _ = WebDriverWait(driver, self.__WAIT_FOR_ELEMENT_TIMEOUT).until(
-                EC.presence_of_element_located(
-                    (
-                        By.XPATH,
-                        "//*[@class='pv-profile-section pv-interests-section artdeco-container-card artdeco-card ember-view']",
-                    )
-                )
-            )
-            interestContainer = driver.find_element(By.XPATH,
-                "//*[@class='pv-profile-section pv-interests-section artdeco-container-card artdeco-card ember-view']"
-            )
-            for interestElement in interestContainer.find_elements(By.XPATH,
-                "//*[@class='pv-interest-entity pv-profile-section__card-item ember-view']"
-            ):
-                interest = Interest(
-                    interestElement.find_element(By.TAG_NAME, "h3").text.strip()
-                )
-                self.add_interest(interest)
-        except:
-            pass
-
-        # get accomplishment
-        try:
-            _ = WebDriverWait(driver, self.__WAIT_FOR_ELEMENT_TIMEOUT).until(
-                EC.presence_of_element_located(
-                    (
-                        By.XPATH,
-                        "//*[@class='pv-profile-section pv-accomplishments-section artdeco-container-card artdeco-card ember-view']",
-                    )
-                )
-            )
-            acc = driver.find_element(By.XPATH,
-                "//*[@class='pv-profile-section pv-accomplishments-section artdeco-container-card artdeco-card ember-view']"
-            )
-            for block in acc.find_elements(By.XPATH,
-                "//div[@class='pv-accomplishments-block__content break-words']"
-            ):
-                category = block.find_element(By.TAG_NAME, "h3")
-                for title in block.find_element(By.TAG_NAME,
-                    "ul"
-                ).find_elements(By.TAG_NAME, "li"):
-                    accomplishment = Accomplishment(category.text, title.text)
-                    self.add_accomplishment(accomplishment)
-        except:
-            pass
-
-        # get connections
-        try:
-            driver.get("https://www.linkedin.com/mynetwork/invite-connect/connections/")
-            _ = WebDriverWait(driver, self.__WAIT_FOR_ELEMENT_TIMEOUT).until(
-                EC.presence_of_element_located((By.CLASS_NAME, "mn-connections"))
-            )
-            connections = driver.find_element(By.CLASS_NAME, "mn-connections")
-            if connections is not None:
-                for conn in connections.find_elements(By.CLASS_NAME, "mn-connection-card"):
-                    anchor = conn.find_element(By.CLASS_NAME, "mn-connection-card__link")
-                    url = anchor.get_attribute("href")
-                    name = conn.find_element(By.CLASS_NAME, "mn-connection-card__details").find_element(By.CLASS_NAME, "mn-connection-card__name").text.strip()
-                    occupation = conn.find_element(By.CLASS_NAME, "mn-connection-card__details").find_element(By.CLASS_NAME, "mn-connection-card__occupation").text.strip()
-
-                    contact = Contact(name=name, occupation=occupation, url=url)
-                    self.add_contact(contact)
-        except:
-            connections = None
-
         if close_on_complete:
             driver.quit()
+
+    def get_skills(self):
+        url = os.path.join(self.linkedin_url, "details/skills")
+        self.driver.get(url)
+        self.focus()
+        main = self.wait_for_element_to_load(by=By.TAG_NAME, name="main")
+        self.scroll_to_half()
+        self.scroll_to_bottom()
+        a_href_list = main.find_elements(By.XPATH, "//a[@data-field='skill_page_skill_topic']")
+        skills = []
+        for a_href in a_href_list:
+            element = a_href.find_element(By.XPATH,'.//span[@aria-hidden="true"]')
+            self.__scroll_into__(element)
+            time.sleep(2)
+            if element.text != "":
+                self.callback_log(
+                    CallbackLog(
+                        currentUrl=self.driver.current_url,
+                        targetUrl=self.linkedin_url,
+                        current_pagination=None,
+                        total_pagination=None,
+                        message=f"Extracted Skill: {element.text}, On Account: {self.name}"
+                    )
+                )
+                skills.append(element.text)
+        self.skills = skills
+        
 
     @property
     def company(self):
