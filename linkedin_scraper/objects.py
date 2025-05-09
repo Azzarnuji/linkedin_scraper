@@ -9,7 +9,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
+import asyncio
+import inspect
 
 @dataclass
 class Contact:
@@ -116,6 +117,16 @@ class Scraper:
             )
         )
         
+    def safe_callback(cb, *args, **kwargs):
+        if inspect.iscoroutinefunction(cb):
+            try:
+                loop = asyncio.get_running_loop()
+                asyncio.create_task(cb(*args, **kwargs))
+            except RuntimeError:
+                asyncio.run(cb(*args, **kwargs))
+        else:
+            cb(*args, **kwargs)
+
         
     def wait_for_element_to_be_clickable(self, xpath, by=By.XPATH):
         return WebDriverWait(self.driver, self.WAIT_FOR_ELEMENT_TIMEOUT).until(

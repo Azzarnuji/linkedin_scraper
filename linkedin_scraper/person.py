@@ -125,15 +125,14 @@ class Person(Scraper):
         main_list = self.wait_for_element_to_load(name="pvs-list__container", base=main)
         for position in main_list.find_elements(By.CLASS_NAME, "pvs-list__paged-list-item"):
             if self.callback_log != None:
-                self.callback_log(
-                    CallbackLog(
-                        currentUrl=self.driver.current_url,
-                        targetUrl=self.linkedin_url,
-                        current_pagination=None,
-                        total_pagination=None,
-                        message="Extracting Experience"
-                    )
-                )
+                self.safe_callback(self.callback_log, CallbackLog(
+                    currentUrl=self.driver.current_url,
+                    targetUrl=self.linkedin_url,
+                    current_pagination=None,
+                    total_pagination=None,
+                    message="Extracting Experience"
+                ))
+                
             position = position.find_element(By.CSS_SELECTOR, "div[data-view-name='profile-component-entity']")
             self.__scroll_into__(position)
             time.sleep(3)
@@ -212,15 +211,14 @@ class Person(Scraper):
                         linkedin_url=company_linkedin_url
                     )
                     if self.callback_log != None:
-                        self.callback_log(
-                            CallbackLog(
-                                currentUrl=self.driver.current_url,
-                                targetUrl=self.linkedin_url,
-                                current_pagination=None,
-                                total_pagination=None,
-                                message=f"Extracted Experience: {position_title}, On Account: {self.name}"
-                            )
-                        )
+                        self.safe_callback(self.callback_log, CallbackLog(
+                            currentUrl=self.driver.current_url,
+                            targetUrl=self.linkedin_url,
+                            current_pagination=None,
+                            total_pagination=None,
+                            message=f"Extracted Experience: {position_title}, On Account: {self.name}"
+                        ))
+                        
                     self.add_experience(experience)
             else:
                 description = position_summary_text.text if position_summary_text else ""
@@ -236,15 +234,14 @@ class Person(Scraper):
                     linkedin_url=company_linkedin_url
                 )
                 if self.callback_log != None:
-                    self.callback_log(
-                        CallbackLog(
-                            currentUrl=self.driver.current_url,
-                            targetUrl=self.linkedin_url,
-                            current_pagination=None,
-                            total_pagination=None,
-                            message=f"Extracted Experience: {position_title}, On Account: {self.name}"
-                        )
-                    )
+                    self.safe_callback(self.callback_log, CallbackLog(
+                        currentUrl=self.driver.current_url,
+                        targetUrl=self.linkedin_url,
+                        current_pagination=None,
+                        total_pagination=None,
+                        message=f"Extracted Experience: {position_title}, On Account: {self.name}"
+                    ))
+                    
                 self.add_experience(experience)
             
             
@@ -417,15 +414,14 @@ class Person(Scraper):
             self.__scroll_into__(element)
             time.sleep(2)
             if element.text != "":
-                self.callback_log(
-                    CallbackLog(
-                        currentUrl=self.driver.current_url,
-                        targetUrl=self.linkedin_url,
-                        current_pagination=None,
-                        total_pagination=None,
-                        message=f"Extracted Skill: {element.text}, On Account: {self.name}"
-                    )
-                )
+                self.safe_callback(self.callback_log, CallbackLog(
+                    currentUrl=self.driver.current_url,
+                    targetUrl=self.linkedin_url,
+                    current_pagination=None,
+                    total_pagination=None,
+                    message=f"Extracted Skill: {element.text}, On Account: {self.name}"
+                ))
+                
                 skills.append(element.text)
         self.skills = skills
         
