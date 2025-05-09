@@ -8,19 +8,18 @@ import random
 
 
 class PaginationBot(Scraper):
-    def __init__(self, options: PaginationBotOptions):
-        self.driver: webdriver.Chrome = options.driver
-        self.callback  = options.callback
-        self.url_pagination = options.url_pagination
-        self.callback_log = options.callbackLog
-        self.current_page = options.currentPage
-        self.converted_to_page = options.currentPage // 10
+    def __init__(self, driver, url_pagination, callback, callbackLog, currentPage, limit, callbackStopReason):
+        self.driver: webdriver.Chrome = driver
+        self.callback  = callback
+        self.url_pagination = url_pagination
+        self.callback_log = callbackLog
+        self.current_page = currentPage
+        self.converted_to_page = currentPage // 10
         self.pagination_count = 1
-        self.limit = options.limit
+        self.limit = limit
         self.scrapped = 0
         self.original_window = None
-        self.callback_stop_reason = options.callbackStopReason
-        self.run()
+        self.callback_stop_reason = callbackStopReason
     
     def run(self):
         self.driver.get(self.url_pagination)

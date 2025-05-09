@@ -35,16 +35,14 @@ class LinkedinBot:
         
     def run_scrape_person(self):
         PaginationBot(
-            PaginationBotOptions(
-                driver=self.driver,
-                url_pagination=self.url_pagination,
-                callback=self.callback,
-                callbackLog=self.callback_log,
-                currentPage=self.current_page,
-                limit=self.limit,
-                callbackStopReason=self.callback_stop_reason
-            )
-        )
+            self.driver,
+            self.url_pagination,
+            self.callback,
+            self.callback_log,
+            self.current_page,
+            self.limit,
+            self.callback_stop_reason
+        ).run()
         
     def login_with_cookie(self, cookie):
         from linkedin_scraper import actions
