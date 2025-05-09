@@ -10,6 +10,7 @@ class LinkedinBot:
         self.callback_log = None
         self.current_page = None
         self.limit = None
+        self.callback_stop_reason = None
 
     def set_current_page(self, current_page):
         self.current_page = current_page
