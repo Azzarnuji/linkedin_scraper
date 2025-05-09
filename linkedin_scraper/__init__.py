@@ -4,6 +4,8 @@ from .objects import Institution, Experience, Education, Contact
 from .company import Company
 from .jobs import Job
 from .job_search import JobSearch
+from .linkedin_bot import LinkedinBot
+from .pagination_bot import PaginationBot
 
 __version__ = "2.11.5"
 
