@@ -1,3 +1,4 @@
+
 from linkedin_scraper.pagination_bot import PaginationBot
 from linkedin_scraper.objects import PaginationBotOptions
 
@@ -40,3 +41,7 @@ class LinkedinBot:
                 callbackStopReason=self.callback_stop_reason
             )
         )
+        
+    def login_with_cookie(self, cookie):
+        from linkedin_scraper import actions
+        actions._login_with_cookie(self.driver, cookie)
