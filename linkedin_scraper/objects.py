@@ -117,7 +117,7 @@ class Scraper:
             )
         )
         
-    def safe_callback(cb, *args, **kwargs):
+    def safe_callback(self, cb, *args, **kwargs):
         if not callable(cb):
             raise TypeError(f"Callback harus fungsi atau coroutine, bukan {type(cb)}")
         if inspect.iscoroutinefunction(cb):
@@ -129,17 +129,20 @@ class Scraper:
         else:
             cb(*args, **kwargs)
             
-    def safe_callback_with_return(cb, *args, **kwargs):
+    def safe_callback_with_return(self, cb, *args, **kwargs):
         if not callable(cb):
             raise TypeError(f"Callback harus fungsi atau coroutine, bukan {type(cb)}")
+
         if inspect.iscoroutinefunction(cb):
             try:
                 loop = asyncio.get_running_loop()
-                return asyncio.create_task(cb(*args, **kwargs))
+                # Jika loop sedang berjalan, gunakan create_task()
+                return asyncio.create_task(cb(*args, **kwargs))  # Menjalankan coroutine
             except RuntimeError:
+                # Jika tidak ada loop yang sedang berjalan, gunakan asyncio.run()
                 return asyncio.run(cb(*args, **kwargs))
         else:
-            return cb(*args, **kwargs)
+            return cb(*args, **kwargs)  # Kalau bukan coroutine, panggil langsung
 
         
     def wait_for_element_to_be_clickable(self, xpath, by=By.XPATH):

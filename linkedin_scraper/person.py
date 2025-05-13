@@ -92,9 +92,9 @@ class Person(Scraper):
         self.contacts.append(contact)
     
 
-    def scrape(self, close_on_complete=True):
+    async def scrape(self, close_on_complete=True):
         if self.is_signed_in():
-            self.scrape_logged_in(close_on_complete=close_on_complete)
+            await self.scrape_logged_in(close_on_complete=close_on_complete)
         else:
             print("you are not logged in!")
 
@@ -114,7 +114,7 @@ class Person(Scraper):
         except:
             return False
 
-    def get_experiences(self):
+    async def get_experiences(self):
         url = os.path.join(self.linkedin_url, "details/experience")
         self.driver.get(url)
         self.focus()
@@ -125,7 +125,7 @@ class Person(Scraper):
         main_list = self.wait_for_element_to_load(name="pvs-list__container", base=main)
         for position in main_list.find_elements(By.CLASS_NAME, "pvs-list__paged-list-item"):
             if self.callback_log != None:
-                self.safe_callback(self.callback_log, CallbackLog(
+                await self.callback_log(CallbackLog(
                     currentUrl=self.driver.current_url,
                     targetUrl=self.linkedin_url,
                     current_pagination=None,
@@ -211,7 +211,7 @@ class Person(Scraper):
                         linkedin_url=company_linkedin_url
                     )
                     if self.callback_log != None:
-                        self.safe_callback(self.callback_log, CallbackLog(
+                        await self.callback_log(CallbackLog(
                             currentUrl=self.driver.current_url,
                             targetUrl=self.linkedin_url,
                             current_pagination=None,
@@ -234,7 +234,7 @@ class Person(Scraper):
                     linkedin_url=company_linkedin_url
                 )
                 if self.callback_log != None:
-                    self.safe_callback(self.callback_log, CallbackLog(
+                    await self.callback_log(CallbackLog(
                         currentUrl=self.driver.current_url,
                         targetUrl=self.linkedin_url,
                         current_pagination=None,
@@ -345,7 +345,7 @@ class Person(Scraper):
             about=None
         self.about = about
 
-    def scrape_logged_in(self, close_on_complete=True):
+    async def scrape_logged_in(self, close_on_complete=True):
         driver = self.driver
         duration = None
 
@@ -384,7 +384,7 @@ class Person(Scraper):
         self.wait(5)
         
         # get experience
-        self.get_experiences()
+        await self.get_experiences()
         self.wait(5)
         
         # get education
@@ -392,7 +392,7 @@ class Person(Scraper):
         self.wait(5)
         
         #get skills
-        self.get_skills()
+        await self.get_skills()
         self.wait(5)
 
         driver.get(self.linkedin_url)
@@ -400,7 +400,7 @@ class Person(Scraper):
         if close_on_complete:
             driver.quit()
 
-    def get_skills(self):
+    async def get_skills(self):
         url = os.path.join(self.linkedin_url, "details/skills")
         self.driver.get(url)
         self.focus()
@@ -410,11 +410,12 @@ class Person(Scraper):
         a_href_list = main.find_elements(By.XPATH, "//a[@data-field='skill_page_skill_topic']")
         skills = []
         for a_href in a_href_list:
-            element = a_href.find_element(By.XPATH,'.//span[@aria-hidden="true"]')
+            self.wait_for_element_to_load(By.XPATH, './/span[@aria-hidden="true"]', base=a_href)
+            element = a_href.find_element(By.XPATH, './/span[@aria-hidden="true"]')
             self.__scroll_into__(element)
             time.sleep(2)
             if element.text != "":
-                self.safe_callback(self.callback_log, CallbackLog(
+                await self.callback_log(CallbackLog(
                     currentUrl=self.driver.current_url,
                     targetUrl=self.linkedin_url,
                     current_pagination=None,
@@ -449,7 +450,7 @@ class Person(Scraper):
             return None
 
     def __repr__(self):
-        return "<Person {name}\n\nAbout\n{about}\n\nExperience\n{exp}\n\nEducation\n{edu}\n\nInterest\n{int}\n\nAccomplishments\n{acc}\n\nContacts\n{conn}>".format(
+        return "<Person {name}\n\nAbout\n{about}\n\nExperience\n{exp}\n\nSkills\n{skills}\n\nEducation\n{edu}\n\nInterest\n{int}\n\nAccomplishments\n{acc}\n\nContacts\n{conn}>".format(
             name=self.name,
             about=self.about,
             exp=self.experiences,
@@ -457,4 +458,5 @@ class Person(Scraper):
             int=self.interests,
             acc=self.accomplishments,
             conn=self.contacts,
+            skills=self.skills
         )

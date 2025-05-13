@@ -5,6 +5,7 @@ from linkedin_scraper.objects import CallbackLog, PaginationBotOptions, Scraper
 from selenium.webdriver.common.by import By
 import time
 import random
+import traceback
 
 
 class PaginationBot(Scraper):
@@ -21,7 +22,7 @@ class PaginationBot(Scraper):
         self.original_window = None
         self.callback_stop_reason = callbackStopReason
     
-    def run(self):
+    async def run(self):
         self.driver.get(self.url_pagination)
         self.wait_for_all_elements_to_load(by=By.TAG_NAME, name="main")
         self.wait_for_element_to_load(by=By.XPATH, name="//div[contains(@class,'artdeco-pagination')]//ul/li[last()]/button/span")
@@ -35,7 +36,7 @@ class PaginationBot(Scraper):
                 pagination_button.click()
                 time.sleep(random.randint(2, 5))
                 self.pagination_count += 1
-                self.safe_callback(self.callback_log, CallbackLog(
+                await self.callback_log(CallbackLog(
                     currentUrl = self.driver.current_url,
                     targetUrl = self.url_pagination,
                     current_pagination = self.pagination_count,
@@ -43,45 +44,50 @@ class PaginationBot(Scraper):
                 ))
         while self.pagination_count < total_pagination_pages and self.scrapped < self.limit:
             if self.callback_stop_reason != None:
-                task = self.safe_callback_with_return(self.callback_stop_reason)
-                stopped = asyncio.run(task)
+                stopped = await self.callback_stop_reason()
+                print(stopped)
                 if stopped:
                     break
-            self._run_scrape()
+            await self._run_scrape()
                 
                 
-    def _run_scrape(self):
-        for i in range(1, 11):
-            if self.callback_stop_reason != None:
-                task = self.safe_callback_with_return(self.callback_stop_reason)
-                stopped = asyncio.run(task)
-                if stopped:
-                    self.driver.quit()
-                    return
-            profiles_link_xpath = '//li[{index}]//a[contains(@href, "/in/") and contains(@class,"scale-down")]'
-            profile_link_elm = self.__find_element_by_xpath__(profiles_link_xpath.format(index=i), returnElm=True)
-            self.__scroll_into__(profile_link_elm)
-            target_url = self.clean_url_from_query(profile_link_elm.get_attribute("href"))
-            time.sleep(random.randint(2,5))
-            self.driver.execute_script("window.open('about:blank', '_blank');")
-            self.driver.switch_to.window(self.driver.window_handles[-1])
-            time.sleep(random.randint(2,5))
-            self.safe_callback(self.callback_log, CallbackLog(
-                currentUrl = self.driver.current_url,
-                targetUrl = target_url,
-                current_pagination = self.pagination_count,
-                total_pagination = None
-            ))
-            
-            get_scrape_data = Person(linkedin_url=target_url, driver=self.driver, close_on_complete=False, callback_log=self.callback_log)
-            self.driver.close()
-            self.driver.switch_to.window(self.original_window)
-            
-            self.scrapped += 1
-            self.safe_callback(self.callback, get_scrape_data, self.scrapped)
+    async def _run_scrape(self):
+        try:
+            for i in range(1, 11):
+                if self.callback_stop_reason != None:
+                    stopped = await self.callback_stop_reason()
+                    if stopped:
+                        self.driver.quit()
+                        return
+                profiles_link_xpath = '//li[{index}]//a[contains(@href, "/in/") and contains(@class,"scale-down")]'
+                profile_link_elm = self.__find_element_by_xpath__(profiles_link_xpath.format(index=i), returnElm=True)
+                self.__scroll_into__(profile_link_elm)
+                target_url = self.clean_url_from_query(profile_link_elm.get_attribute("href"))
+                time.sleep(random.randint(2,5))
+                self.driver.execute_script("window.open('about:blank', '_blank');")
+                self.driver.switch_to.window(self.driver.window_handles[-1])
+                time.sleep(random.randint(2,5))
+                await self.callback_log(CallbackLog(
+                    currentUrl = self.driver.current_url,
+                    targetUrl = target_url,
+                    current_pagination = self.pagination_count,
+                    total_pagination = None
+                ))
+                
+                get_scrape_data = Person(linkedin_url=target_url, driver=self.driver, close_on_complete=False, callback_log=self.callback_log, scrape=False)
+                await get_scrape_data.scrape(close_on_complete=False)
+                self.driver.close()
+                self.driver.switch_to.window(self.original_window)
+                
+                self.scrapped += 1
+                await self.callback(get_scrape_data, self.scrapped)
 
-            if self.scrapped == self.limit:
-                break
+                if self.scrapped == self.limit:
+                    break
+        except Exception as e:
+            print(e)
+            traceback.print_exc()
+            raise e
             
         
     
