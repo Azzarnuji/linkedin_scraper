@@ -92,9 +92,9 @@ class Person(Scraper):
         self.contacts.append(contact)
     
 
-    async def scrape(self, close_on_complete=True):
+    def scrape(self, close_on_complete=True):
         if self.is_signed_in():
-            await self.scrape_logged_in(close_on_complete=close_on_complete)
+            self.scrape_logged_in(close_on_complete=close_on_complete)
         else:
             print("you are not logged in!")
 
@@ -114,7 +114,7 @@ class Person(Scraper):
         except:
             return False
 
-    async def get_experiences(self):
+    def get_experiences(self):
         url = os.path.join(self.linkedin_url, "details/experience")
         self.driver.get(url)
         self.focus()
@@ -124,14 +124,6 @@ class Person(Scraper):
         self.scroll_to_bottom()
         main_list = self.wait_for_element_to_load(name="pvs-list__container", base=main)
         for position in main_list.find_elements(By.CLASS_NAME, "pvs-list__paged-list-item"):
-            if self.callback_log != None:
-                await self.callback_log(CallbackLog(
-                    currentUrl=self.driver.current_url,
-                    targetUrl=self.linkedin_url,
-                    current_pagination=None,
-                    total_pagination=None,
-                    message="Extracting Experience"
-                ))
                 
             position = position.find_element(By.CSS_SELECTOR, "div[data-view-name='profile-component-entity']")
             
@@ -257,14 +249,6 @@ class Person(Scraper):
                     institution_name=company,
                     linkedin_url=company_linkedin_url
                 )
-                if self.callback_log != None:
-                    await self.callback_log(CallbackLog(
-                        currentUrl=self.driver.current_url,
-                        targetUrl=self.linkedin_url,
-                        current_pagination=None,
-                        total_pagination=None,
-                        message=f"Extracted Experience: {position_title}, On Account: {self.name}"
-                    ))
                     
                 self.add_experience(experience)
             
@@ -391,7 +375,7 @@ class Person(Scraper):
             about=None
         self.about = about
 
-    async def scrape_logged_in(self, close_on_complete=True):
+    def scrape_logged_in(self, close_on_complete=True):
         driver = self.driver
         duration = None
 
@@ -430,7 +414,7 @@ class Person(Scraper):
         self.wait(5)
         
         # get experience
-        await self.get_experiences()
+        self.get_experiences()
         self.wait(5)
         
         # get education
@@ -438,7 +422,7 @@ class Person(Scraper):
         self.wait(5)
         
         #get skills
-        await self.get_skills()
+        self.get_skills()
         self.wait(5)
 
         driver.get(self.linkedin_url)
@@ -446,7 +430,7 @@ class Person(Scraper):
         if close_on_complete:
             driver.quit()
 
-    async def get_skills(self):
+    def get_skills(self):
         url = os.path.join(self.linkedin_url, "details/skills")
         self.driver.get(url)
         self.focus()
@@ -460,16 +444,8 @@ class Person(Scraper):
             element = a_href.find_element(By.XPATH, './/span[@aria-hidden="true"]')
             self.__scroll_into__(element)
             time.sleep(2)
-            if element.text != "":
-                await self.callback_log(CallbackLog(
-                    currentUrl=self.driver.current_url,
-                    targetUrl=self.linkedin_url,
-                    current_pagination=None,
-                    total_pagination=None,
-                    message=f"Extracted Skill: {element.text}, On Account: {self.name}"
-                ))
                 
-                skills.append(element.text)
+            skills.append(element.text)
         self.skills = skills
         
 
