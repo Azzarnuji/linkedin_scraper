@@ -34,7 +34,8 @@ class Person(Scraper):
         scrape=True,
         close_on_complete=True,
         time_to_wait_after_login=0,
-        callback_log: CallbackLog = None
+        callback_log: CallbackLog = None,
+        html_element: str | None = None
     ):
         self.linkedin_url = linkedin_url
         self.name = name
@@ -48,6 +49,7 @@ class Person(Scraper):
         self.contact_info = None
         self.skills = []
         self.callback_log = callback_log
+        self.html_element = html_element
 
         if driver is None:
             try:
@@ -115,7 +117,10 @@ class Person(Scraper):
             return False
 
     def get_experiences(self):
-        url = os.path.join(self.linkedin_url, "details/experience")
+        if self.html_element:
+            url = self.html_element
+        else:    
+            url = os.path.join(self.linkedin_url, "details/experience")
         self.driver.get(url)
         self.focus()
         main = self.wait_for_element_to_load(by=By.TAG_NAME, name="main")
@@ -255,7 +260,10 @@ class Person(Scraper):
             
 
     def get_educations(self):
-        url = os.path.join(self.linkedin_url, "details/education")
+        if self.html_element:
+            url = self.html_element
+        else:    
+            url = os.path.join(self.linkedin_url, "details/education")
         self.driver.get(url)
         self.focus()
         main = self.wait_for_element_to_load(by=By.TAG_NAME, name="main")
@@ -333,7 +341,10 @@ class Person(Scraper):
         self.location = top_panel.find_element(By.XPATH, "//*[@class='text-body-small inline t-black--light break-words']").text
 
     def get_contact_info(self):
-        url = os.path.join(self.linkedin_url, "overlay/contact-info/")
+        if self.html_element:
+            url = self.html_element
+        else:    
+            url = os.path.join(self.linkedin_url, "overlay/contact-info/")
         self.driver.get(url)
         self.wait_for_element_to_load(by=By.CLASS_NAME, name="artdeco-modal-overlay")
         
@@ -365,7 +376,7 @@ class Person(Scraper):
         }
         
         self.contact_info = ContactInfo(**account_details)
-         
+        
         
 
     def get_about(self):
@@ -431,7 +442,10 @@ class Person(Scraper):
             driver.quit()
 
     def get_skills(self):
-        url = os.path.join(self.linkedin_url, "details/skills")
+        if self.html_element:
+            url = self.html_element
+        else:    
+            url = os.path.join(self.linkedin_url, "details/skills")
         self.driver.get(url)
         self.focus()
         main = self.wait_for_element_to_load(by=By.TAG_NAME, name="main")
@@ -472,7 +486,7 @@ class Person(Scraper):
             return None
 
     def __repr__(self):
-        return "<Person {name}\n\nAbout\n{about}\n\nExperience\n{exp}\n\nSkills\n{skills}\n\nEducation\n{edu}\n\nInterest\n{int}\n\nAccomplishments\n{acc}\n\nContacts\n{conn}>".format(
+        return "<Person {name}\n\nAbout\n{about}\n\nExperience\n{exp}\n\nSkills\n{skills}\n\nEducation\n{edu}\n\nInterest\n{int}\n\nAccomplishments\n{acc}\n\nContacts\n{conn}\n\nContact Information\n{contact_info}\n>".format(
             name=self.name,
             about=self.about,
             exp=self.experiences,
@@ -480,5 +494,6 @@ class Person(Scraper):
             int=self.interests,
             acc=self.accomplishments,
             conn=self.contacts,
-            skills=self.skills
+            skills=self.skills,
+            contact_info=self.contact_info
         )
