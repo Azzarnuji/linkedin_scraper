@@ -39,6 +39,7 @@ class Person(Scraper):
     ):
         self.linkedin_url = linkedin_url
         self.name = name
+        self.headline = None
         self.about = about or []
         self.experiences = experiences or []
         self.educations = educations or []
@@ -339,7 +340,7 @@ class Person(Scraper):
         top_panel = self.driver.find_element(By.XPATH, "//*[@class='mt2 relative']")
         self.name = top_panel.find_element(By.TAG_NAME, "h1").text
         self.location = top_panel.find_element(By.XPATH, "//*[@class='text-body-small inline t-black--light break-words']").text
-
+        self.headline = top_panel.find_element(By.XPATH, "//*[@class='text-body-medium break-words']").text
     def get_contact_info(self):
         if self.html_element:
             url = self.html_element

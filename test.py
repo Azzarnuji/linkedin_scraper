@@ -3,9 +3,11 @@ from selenium.webdriver.chrome.service import Service
 from selenium_stealth import stealth
 from selenium.webdriver.chrome.options import Options
 from linkedin_scraper.person import Person
+from bs4 import BeautifulSoup
 chrome_options = Options()
 # chrome_options.add_argument("start-maximized")
 chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-features=NetworkService")
 chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
 chrome_options.add_experimental_option('useAutomationExtension', False)
 chrome_options.add_argument("--disable-dev-shm-usage")
@@ -56,11 +58,43 @@ import time
 import urllib.parse
 import tempfile
 
+def clean_html(html: str) -> str:
+    soup = BeautifulSoup(html, "html.parser")
+
+    # Hapus semua script yang punya src atau berisi keyword tracking
+    for tag in soup.find_all("script"):
+        if tag.get("src"):
+            tag.decompose()
+        elif any(keyword in tag.text.lower() for keyword in ["fetch", "new image", "navigator.sendbeacon", "tracking", "analytics"]):
+            tag.decompose() 
+
+    # Domain eksternal yang ingin diblok
+    block_domains = [
+        "protechts.net", "licdn.com", "doubleclick.net", "googletagmanager.com", "google-analytics.com"
+    ]
+
+    # Hapus <img>, <iframe>, <link> yang mengarah ke domain eksternal
+    for tag in soup.find_all(["img", "iframe", "link", "image"]):
+        for attr in ["src", "href"]:
+            url = tag.get(attr, "")
+            if any(domain in url for domain in block_domains):
+                tag.decompose()
+                break
+        tag.decompose()
+        
+
+    return str(soup)
+
 mapping = [
-    # {
-    #     "type":"get_skills",
-    #     "file":"skill.html"
-    # },
+    {
+        "type":"get_name_and_location",
+        "file":"profile.html"
+    },
+    {
+        "type":"get_skills",
+        "file":"skill.html"
+    },
+    
     {
         "type":"get_educations",
         "file":"education_profile.html"
@@ -75,18 +109,27 @@ mapping = [
     }
 ]
 result = Person(get=False, scrape=False, driver=driver)
+with open("profile.html", "r", encoding="utf-8") as f:
+    html = f.read()
 
-for m in mapping:
-    print(m["type"])
-    with open(m["file"], "r", encoding="utf-8") as f:
-        html = f.read()
+with tempfile.NamedTemporaryFile(delete=False, suffix=".html", mode="w", encoding="utf-8") as f:
+    html_clean = str(clean_html(html))
+    f.write(html_clean)
+    temp_html_path = f.name
+result.html_element = "file://" + temp_html_path
+result.driver.get("file://" + temp_html_path)
+result.get_name_and_location()
+# for m in mapping:
+#     print(m["type"])
+#     with open(m["file"], "r", encoding="utf-8") as f:
+#         html = f.read()
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".html", mode="w", encoding="utf-8") as f:
-        f.write(html)
-        temp_html_path = f.name
-    result.html_element = "file://" + temp_html_path
-    result.__getattribute__(m["type"])()
+#     with tempfile.NamedTemporaryFile(delete=False, suffix=".html", mode="w", encoding="utf-8") as f:
+#         f.write(html)
+#         temp_html_path = f.name
+#     result.html_element = "file://" + temp_html_path
+#     result.__getattribute__(m["type"])()
 
 print(result)
-
+time.sleep(3600)
         
