@@ -86,6 +86,23 @@ class Interest(Institution):
 class Accomplishment(Institution):
     category = None
     title = None
+    
+class SafeElement:
+    def __init__(self, element, default=None):
+        self._element = element
+        self.default = default
+
+    @property
+    def text(self):
+        if self._element:
+            return self._element.text
+        return self.default  # atau "" kalau mau string kosong
+
+    def __getattr__(self, item):
+        # Forward other attribute accesses to the real element (if exists)
+        if self._element:
+            return getattr(self._element, item)
+        raise AttributeError(f"'NoneType' has no attribute '{item}'")
 
 
 @dataclass
@@ -211,11 +228,11 @@ class Scraper:
         try:
             element = self.driver.find_element(By.XPATH,tag_name)
             if returnElm:
-                return element
+                return SafeElement(element, default="Not Available")
             return True
         except:
             pass
-        return False
+        return SafeElement(None, default="Not Available") if returnElm else False
 
     def __find_enabled_element_by_xpath__(self, tag_name):
         try:
