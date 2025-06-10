@@ -348,16 +348,16 @@ class Person(Scraper):
             url = os.path.join(self.linkedin_url, "overlay/contact-info/")
         self.driver.get(url)
         self.wait_for_element_to_load(by=By.CLASS_NAME, name="artdeco-modal-overlay")
-        
+        account_email = self.__find_element_by_xpath__(
+                '//section[contains(@class,"pv-contact-info") and h3[text()[contains(.,"Email") or contains(.,"Email")]]]//div//a[contains(@class,"link-without-visited-state") and contains(@rel,"noopener noreferrer") and contains(@href,"mail")]'
+            ,True
+        )
         account_details = {
             "account_address": self.__find_element_by_xpath__(
                 '//section[contains(@class,"pv-contact-info") and h3[text()[contains(.,"Address") or contains(.,"Alamat")]]]//div//a[contains(@class,"link-without-visited-state") and contains(@rel,"noopener noreferrer") and contains(@href,"maps")]'
             ,True
             ).text,
-            "account_email": self.__find_element_by_xpath__(
-                '//section[contains(@class,"pv-contact-info") and h3[text()[contains(.,"Email") or contains(.,"Email")]]]//div//a[contains(@class,"link-without-visited-state") and contains(@rel,"noopener noreferrer") and contains(@href,"mail")]'
-            ,True
-            ).get_attribute('href').split(":")[1],
+            "account_email": account_email.get_attribute('href').split(":")[1] if hasattr(account_email, 'get_attribute') else "Not Available",
             "account_birthday": self.__find_element_by_xpath__(
                 '//section[contains(@class,"pv-contact-info") and h3[text()[contains(.,"Birthday") or contains(.,"Ulang Tahun")]]]//span[contains(@class,"t-14")]'
             ,True
